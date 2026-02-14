@@ -5,46 +5,55 @@ const User = require("../models/User")
 
 // Registrera
 router.post("/register", async (req, res) => {
-  const { username, password } = req.body
+    const { username, password } = req.body
 
-  const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10)
 
-  const user = new User({
-    username,
-    password: hashedPassword
-  })
+    const user = new User({
+        username,
+        password: hashedPassword
+    })
 
-  await user.save()
+    await user.save()
 
-  res.json({ message: "User created" })
+    res.json({ message: "User created" })
 })
 
 // Login
 router.post("/login", async (req, res) => {
-  const { username, password } = req.body
+    const { username, password } = req.body
 
-  //Hitta användaren i databasen
-  const user = await User.findOne({ username })
-  if (!user) return res.status(400).json({ message: "User not found" })
+    //Hitta användaren i databasen
+    const user = await User.findOne({ username })
+    if (!user) return res.status(400).json({ message: "User not found" })
 
     // Jämför lösenordet
-  const isMatch = await bcrypt.compare(password, user.password)
-  if (!isMatch) return res.status(400).json({ message: "Wrong password" })
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) return res.status(400).json({ message: "Wrong password" })
 
     // Skapa JWT-token
-  const token = jwt.sign(
-    { id: user._id },
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }
-  )
+    const token = jwt.sign(
+        { id: user._id },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+    )
 
-  res.json({ 
-    token, 
-    user: {
-        id: user._id,
-        username: user.username
-    }
+    res.json({
+        token,
+        user: {
+            id: user._id,
+            username: user.username
+        }
+    })
 })
-})
+
+const auth = require("../middleware/authMiddleware");
+
+// Validate token
+router.get("/validate", auth, async (req, res) => {
+    res.json({
+        id: req.user.id
+    });
+});
 
 module.exports = router
